@@ -1,5 +1,10 @@
 # typed-geojson
 
+[![crates.io](https://img.shields.io/crates/v/typed-geojson.svg)](https://crates.io/crates/typed-geojson)
+[![docs.rs](https://img.shields.io/docsrs/typed-geojson)](https://docs.rs/typed-geojson)
+[![CI](https://img.shields.io/github/actions/workflow/status/johncarmack1984/typed-geojson/ci.yml?branch=main&label=CI)](https://github.com/johncarmack1984/typed-geojson/actions/workflows/ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/crates/l/typed-geojson.svg)](#license)
+
 Strongly-typed [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946) for Rust.
 `Feature<G, P>` / `FeatureCollection<G, P>` — generic over **G**eometry and
 **P**roperties, layered over the georust [`geojson`](https://crates.io/crates/geojson)
