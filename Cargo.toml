@@ -1,0 +1,19 @@
+[package]
+name = "typed-geojson"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Strongly-typed GeoJSON — Feature<T> and FeatureCollection<T> with typed properties, layered over the georust geojson crate."
+repository = "https://github.com/johncarmack1984/typed-geojson"
+documentation = "https://docs.rs/typed-geojson"
+readme = "README.md"
+keywords = ["geojson", "geospatial", "serde", "typed", "geo"]
+categories = ["science::geo", "encoding"]
+
+[dependencies]
+geojson = "1.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
