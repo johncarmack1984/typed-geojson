@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: Rust (test, clippy, fmt)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo test
+      - run: cargo test --features specta
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo clippy --all-targets --features specta -- -D warnings
+      # Ensure the benchmarks keep compiling (don't run timings in CI).
+      - run: cargo bench --no-run
+
+  typescript:
+    name: TS assignability vs @types/geojson
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ts/package-lock.json
+      # Regenerate the bindings and fail if they drifted from what's committed.
+      - run: cargo run --example export_bindings --features specta
+      - run: git diff --exit-code ts/bindings.ts
+      # The north star: the generated bindings must be mutually assignable with
+      # @types/geojson (both directions), gated by `tsc --noEmit`.
+      - working-directory: ts
+        run: npm ci
+      - working-directory: ts
+        run: npx tsc --noEmit

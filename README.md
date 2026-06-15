@@ -1,17 +1,18 @@
 # typed-geojson
 
 Strongly-typed [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946) for Rust:
-`Feature<T>` and `FeatureCollection<T>` with **typed `properties`**, layered over
-the [georust `geojson`](https://crates.io/crates/geojson) crate.
+`Feature<G, P>` and `FeatureCollection<G, P>`, generic over the **G**eometry and
+the **P**roperties, layered over the
+[georust `geojson`](https://crates.io/crates/geojson) crate.
 
 `geojson::Feature` models `properties` as an untyped
 `Option<serde_json::Map<String, Value>>`. Most real data has a *shape* — so this
-crate makes it your `T`, while reusing `geojson::Geometry` for full RFC 7946
-geometry fidelity.
+crate makes it your `P`, and (with the `specta` feature) the whole thing exports
+to TypeScript that is **mutually assignable with [`@types/geojson`](https://www.npmjs.com/package/@types/geojson)**.
 
 ```rust
 use serde::{Deserialize, Serialize};
-use typed_geojson::{Feature, FeatureCollection};
+use typed_geojson::{Feature, Geometry};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Station {
@@ -26,7 +27,7 @@ let raw = r#"{
     "properties": { "id": 7, "name": "DFW", "temp_c": 31.5 }
 }"#;
 
-let feature: Feature<Station> = serde_json::from_str(raw).unwrap();
+let feature: Feature<Geometry, Station> = serde_json::from_str(raw).unwrap();
 assert_eq!(feature.properties.name, "DFW");
 
 // serializes back to standard GeoJSON
@@ -35,28 +36,52 @@ let json = serde_json::to_string(&feature).unwrap();
 
 ## What you get
 
-- `Feature<T>` / `FeatureCollection<T>` — `properties` is your domain type.
+- `Feature<G, P>` / `FeatureCollection<G, P>` — same parameter order as
+  `@types/geojson`'s `Feature<G, P>`. `G` defaults to the typed [`Geometry`]
+  union, `P` to an untyped JSON object.
+- A full set of typed geometry types — `Point`, `LineString`, `Polygon`,
+  `MultiPoint`, `MultiLineString`, `MultiPolygon`, `GeometryCollection`, and the
+  `Geometry` union — each matching its native `@types/geojson` shape.
 - serde `Serialize`/`Deserialize` that round-trips to/from spec GeoJSON
   (validates `"type"`, tolerates RFC 7946 foreign members, keeps `id`/`bbox`).
-- `geometry: Option<geojson::Geometry>` — no geometry re-implementation.
-- Bridges to the untyped crate: `geojson::Feature: TryFrom<Feature<T>>` and
-  `Feature<T>: TryFrom<geojson::Feature>`.
+- Bridges to the untyped crate: `geojson::Feature: TryFrom<Feature<Option<Geometry>, P>>`
+  and the reverse, plus `geojson::Geometry: TryFrom<Geometry>`.
 
-## Bridging to the untyped crate
+### Nullability lives in `G`
+
+Per RFC 7946 a Feature's `geometry` is mandatory but may be `null`. Like native
+`@types/geojson`, that nullability is expressed through `G`:
 
 ```rust
-let untyped: geojson::Feature = typed_feature.try_into()?;   // T: Serialize
-let typed: Feature<Station>   = untyped.try_into()?;          // T: DeserializeOwned
+type Located    = Feature<Geometry, Props>;          // geometry: Geometry  (non-null)
+type Unlocated  = Feature<Option<Geometry>, Props>;  // geometry: Geometry | null
+type PointsOnly = Feature<Point, Props>;             // geometry: Point
 ```
 
-## Roadmap
+## TypeScript export (`specta` feature)
 
-- **`specta` feature** — derive `specta::Type` so `Feature<T>` exports to
-  TypeScript as `Feature<T>` with a typed `properties`. The open design
-  question is how to represent `geometry` for TS (a typed GeoJSON geometry
-  union vs. an opaque value) — being worked out before it lands.
-- Typed/owned geometry option (`geo-types` interop).
-- `#![no_std]` + `alloc` consideration.
+Enable the `specta` feature and every type derives [`specta::Type`]. A Rust
+function returning, say, `Feature<Point, Props>` exports to a TypeScript
+`Feature<Point, Props>` that is assignable **to and from**
+`GeoJSON.Feature<GeoJSON.Point, Props>` — with zero `tsc` errors, in both
+directions.
+
+```rust
+let types = typed_geojson::specta_types();
+let ts = specta_typescript::Typescript::default()
+    .export(&types, specta_serde::Format)
+    .unwrap();
+```
+
+The `ts/` directory holds the assignability harness: it imports `@types/geojson`
+alongside the generated bindings and asserts mutual assignability across the
+geometry × properties × container matrix, gated in CI by `tsc --noEmit`.
+
+A couple of details make the bindings line up exactly with native:
+
+- `bbox` is a **tuple union** (`[number, number, number, number] | [number, …×6]`),
+  not `number[]` — so it is assignable to native `BBox`.
+- each geometry's `"type"` exports as a **string literal** (`"Point"`), not `string`.
 
 ## License
 
