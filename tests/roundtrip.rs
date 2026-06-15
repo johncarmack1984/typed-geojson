@@ -72,3 +72,30 @@ fn numeric_id_preserved() {
     .unwrap();
     assert_eq!(f.id, Some(Id::Number(42.into())));
 }
+
+// A user-supplied geometry type: the generic `G` lets you pin geometry the way
+// `@types/geojson`'s `Feature<G, P>` does (a preview of the planned
+// specta-friendly geometry types — see .claude/NEXT-STEPS.md).
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(tag = "type")]
+enum PointGeom {
+    Point { coordinates: [f64; 2] },
+}
+
+#[test]
+fn typed_geometry_param() {
+    let raw = r#"{ "type": "Feature",
+                   "geometry": { "type": "Point", "coordinates": [-96.8, 32.8] },
+                   "properties": { "event": "x", "severity": 0 } }"#;
+    let f: Feature<Alert, PointGeom> = serde_json::from_str(raw).unwrap();
+    assert_eq!(
+        f.geometry,
+        Some(PointGeom::Point {
+            coordinates: [-96.8, 32.8]
+        })
+    );
+
+    let back: Feature<Alert, PointGeom> =
+        serde_json::from_str(&serde_json::to_string(&f).unwrap()).unwrap();
+    assert_eq!(back, f);
+}

@@ -1,10 +1,13 @@
 //! Strongly-typed [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946).
 //!
 //! The [`geojson`] crate models a Feature's `properties` as an untyped
-//! `Option<serde_json::Map<String, Value>>`. This crate layers a generic `T`
-//! on top — [`Feature<T>`] and [`FeatureCollection<T>`] — so your own domain
-//! type round-trips through GeoJSON, while geometry stays
-//! [`geojson::Geometry`] for full RFC 7946 fidelity and easy interop.
+//! `Option<serde_json::Map<String, Value>>`. This crate adds generics —
+//! [`Feature<P, G>`] and [`FeatureCollection<P, G>`] — typed over both the
+//! `P`roperties and the `G`eometry, mirroring `@types/geojson`'s
+//! `Feature<G, P>` so the two interoperate.
+//!
+//! `G` defaults to [`geojson::Geometry`] (full RFC 7946 fidelity + easy interop
+//! with the georust ecosystem); pick your own `P` for typed properties:
 //!
 //! ```
 //! use serde::{Deserialize, Serialize};
@@ -52,20 +55,21 @@ pub enum Id {
     Number(serde_json::Number),
 }
 
-/// A GeoJSON `Feature` with strongly-typed `properties`.
+/// A GeoJSON `Feature` with typed `P`roperties and `G`eometry.
 ///
-/// `geometry` is reused from [`geojson`]; `properties` is your `T`.
+/// `G` defaults to [`geojson::Geometry`]; supply your own to pin a specific
+/// geometry (e.g. point-only), the way `@types/geojson`'s `Feature<G, P>` does.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Feature<T> {
-    pub geometry: Option<Geometry>,
-    pub properties: T,
+pub struct Feature<P, G = Geometry> {
+    pub geometry: Option<G>,
+    pub properties: P,
     pub id: Option<Id>,
     pub bbox: Option<Bbox>,
 }
 
-impl<T> Feature<T> {
+impl<P, G> Feature<P, G> {
     /// A `Feature` with just a geometry and properties (no `id`/`bbox`).
-    pub fn new(geometry: Option<Geometry>, properties: T) -> Self {
+    pub fn new(geometry: Option<G>, properties: P) -> Self {
         Self {
             geometry,
             properties,
@@ -75,7 +79,7 @@ impl<T> Feature<T> {
     }
 }
 
-impl<T: Serialize> Serialize for Feature<T> {
+impl<P: Serialize, G: Serialize> Serialize for Feature<P, G> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut len = 3; // type, geometry, properties are always present
         if self.id.is_some() {
@@ -111,21 +115,21 @@ enum FeatureField {
     Other,
 }
 
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for Feature<T> {
+impl<'de, P: Deserialize<'de>, G: Deserialize<'de>> Deserialize<'de> for Feature<P, G> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct FeatureVisitor<T>(PhantomData<T>);
+        struct FeatureVisitor<P, G>(PhantomData<(P, G)>);
 
-        impl<'de, T: Deserialize<'de>> Visitor<'de> for FeatureVisitor<T> {
-            type Value = Feature<T>;
+        impl<'de, P: Deserialize<'de>, G: Deserialize<'de>> Visitor<'de> for FeatureVisitor<P, G> {
+            type Value = Feature<P, G>;
 
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 f.write_str("a GeoJSON Feature object")
             }
 
-            fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Feature<T>, M::Error> {
+            fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Feature<P, G>, M::Error> {
                 let mut had_type = false;
-                let mut geometry: Option<Geometry> = None;
-                let mut properties: Option<T> = None;
+                let mut geometry: Option<G> = None;
+                let mut properties: Option<P> = None;
                 let mut id: Option<Id> = None;
                 let mut bbox: Option<Bbox> = None;
 
@@ -167,15 +171,15 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Feature<T> {
     }
 }
 
-/// A GeoJSON `FeatureCollection` of strongly-typed features.
+/// A GeoJSON `FeatureCollection` of typed features.
 #[derive(Clone, Debug, PartialEq)]
-pub struct FeatureCollection<T> {
-    pub features: Vec<Feature<T>>,
+pub struct FeatureCollection<P, G = Geometry> {
+    pub features: Vec<Feature<P, G>>,
     pub bbox: Option<Bbox>,
 }
 
-impl<T> FromIterator<Feature<T>> for FeatureCollection<T> {
-    fn from_iter<I: IntoIterator<Item = Feature<T>>>(iter: I) -> Self {
+impl<P, G> FromIterator<Feature<P, G>> for FeatureCollection<P, G> {
+    fn from_iter<I: IntoIterator<Item = Feature<P, G>>>(iter: I) -> Self {
         Self {
             features: iter.into_iter().collect(),
             bbox: None,
@@ -183,7 +187,7 @@ impl<T> FromIterator<Feature<T>> for FeatureCollection<T> {
     }
 }
 
-impl<T: Serialize> Serialize for FeatureCollection<T> {
+impl<P: Serialize, G: Serialize> Serialize for FeatureCollection<P, G> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut len = 2; // type, features
         if self.bbox.is_some() {
@@ -209,12 +213,12 @@ enum CollectionField {
     Other,
 }
 
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for FeatureCollection<T> {
+impl<'de, P: Deserialize<'de>, G: Deserialize<'de>> Deserialize<'de> for FeatureCollection<P, G> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct CollectionVisitor<T>(PhantomData<T>);
+        struct CollectionVisitor<P, G>(PhantomData<(P, G)>);
 
-        impl<'de, T: Deserialize<'de>> Visitor<'de> for CollectionVisitor<T> {
-            type Value = FeatureCollection<T>;
+        impl<'de, P: Deserialize<'de>, G: Deserialize<'de>> Visitor<'de> for CollectionVisitor<P, G> {
+            type Value = FeatureCollection<P, G>;
 
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 f.write_str("a GeoJSON FeatureCollection object")
@@ -223,9 +227,9 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for FeatureCollection<T> {
             fn visit_map<M: MapAccess<'de>>(
                 self,
                 mut map: M,
-            ) -> Result<FeatureCollection<T>, M::Error> {
+            ) -> Result<FeatureCollection<P, G>, M::Error> {
                 let mut had_type = false;
-                let mut features: Option<Vec<Feature<T>>> = None;
+                let mut features: Option<Vec<Feature<P, G>>> = None;
                 let mut bbox: Option<Bbox> = None;
 
                 while let Some(key) = map.next_key()? {
@@ -261,7 +265,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for FeatureCollection<T> {
     }
 }
 
-// --- bridges to/from the untyped `geojson` crate ------------------------------
+// --- bridges to/from the untyped `geojson` crate (default geometry only) ------
 
 impl From<Id> for geojson::feature::Id {
     fn from(id: Id) -> Self {
@@ -281,10 +285,10 @@ impl From<geojson::feature::Id> for Id {
     }
 }
 
-impl<T: Serialize> TryFrom<Feature<T>> for geojson::Feature {
+impl<P: Serialize> TryFrom<Feature<P>> for geojson::Feature {
     type Error = serde_json::Error;
 
-    fn try_from(f: Feature<T>) -> Result<Self, Self::Error> {
+    fn try_from(f: Feature<P>) -> Result<Self, Self::Error> {
         let properties = match serde_json::to_value(&f.properties)? {
             serde_json::Value::Object(map) => Some(map),
             serde_json::Value::Null => None,
@@ -304,7 +308,7 @@ impl<T: Serialize> TryFrom<Feature<T>> for geojson::Feature {
     }
 }
 
-impl<T: serde::de::DeserializeOwned> TryFrom<geojson::Feature> for Feature<T> {
+impl<P: serde::de::DeserializeOwned> TryFrom<geojson::Feature> for Feature<P> {
     type Error = serde_json::Error;
 
     fn try_from(f: geojson::Feature) -> Result<Self, Self::Error> {
