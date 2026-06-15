@@ -42,6 +42,21 @@
 //!     serde_json::from_str(&serde_json::to_string(&feature).unwrap()).unwrap();
 //! assert_eq!(back, feature);
 //! ```
+//!
+//! It also bridges to the untyped [`geojson`] crate (whose geometry is nullable,
+//! so use `Option<Geometry>`):
+//!
+//! ```
+//! use typed_geojson::{Feature, Geometry, Point};
+//!
+//! // geojson stores properties as a JSON object, so `P` must serialize to one.
+//! let f: Feature<Option<Geometry>, serde_json::Value> = Feature::new(
+//!     Some(Geometry::Point(Point::new(vec![-96.8, 32.8]))),
+//!     serde_json::json!({ "name": "DFW" }),
+//! );
+//! let untyped: geojson::Feature = f.try_into().unwrap();
+//! assert!(untyped.geometry.is_some());
+//! ```
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -82,6 +97,8 @@ pub type Properties = Option<serde_json::Map<String, serde_json::Value>>;
 /// Modeled as a tuple union to match `@types/geojson`'s
 /// `BBox = [number, number, number, number] | [number, …×6]`, so it is
 /// assignable **to and from** the native type (a plain `number[]` is not).
+///
+/// Deserializes from a flat array of 4 or 6 numbers; any other length errors.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(untagged)]
@@ -134,9 +151,23 @@ pub enum Id {
 
 /// A GeoJSON `Feature` with typed `G`eometry and `P`roperties.
 ///
-/// `G` defaults to [`geojson::Geometry`] and `P` to [`Properties`], matching
-/// `@types/geojson`'s `Feature<G = Geometry, P = GeoJsonProperties>`. Supply
-/// your own to pin a specific geometry and/or typed properties.
+/// `G` defaults to the [`Geometry`] union and `P` to [`Properties`], matching
+/// `@types/geojson`'s `Feature<G = Geometry, P = GeoJsonProperties>`. Pin `G` to
+/// a single geometry (e.g. [`Point`]) and/or set `P` to your own type.
+///
+/// Geometry is required but may be `null` (RFC 7946 §3.2); that nullability
+/// lives in `G` — `Feature<Option<Geometry>, P>` is the nullable form.
+///
+/// ```
+/// use typed_geojson::{Feature, Point};
+///
+/// let f: Feature<Point, &str> = Feature::new(Point::new(vec![-96.8, 32.8]), "DFW");
+///
+/// assert_eq!(
+///     serde_json::to_string(&f).unwrap(),
+///     r#"{"type":"Feature","geometry":{"type":"Point","coordinates":[-96.8,32.8]},"properties":"DFW"}"#,
+/// );
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Feature<G = Geometry, P = Properties> {
     pub geometry: G,
@@ -256,6 +287,22 @@ impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature
 }
 
 /// A GeoJSON `FeatureCollection` of typed features.
+///
+/// `collect` from any iterator of [`Feature`]s:
+///
+/// ```
+/// use typed_geojson::{Feature, FeatureCollection, Point};
+///
+/// let fc: FeatureCollection<Point, &str> = [
+///     Feature::new(Point::new(vec![0.0, 0.0]), "origin"),
+///     Feature::new(Point::new(vec![1.0, 1.0]), "ne"),
+/// ]
+/// .into_iter()
+/// .collect();
+///
+/// assert_eq!(fc.features.len(), 2);
+/// assert!(serde_json::to_string(&fc).unwrap().starts_with(r#"{"type":"FeatureCollection""#));
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct FeatureCollection<G = Geometry, P = Properties> {
     pub features: Vec<Feature<G, P>>,

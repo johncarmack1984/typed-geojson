@@ -6,6 +6,8 @@
  *  Modeled as a tuple union to match `@types/geojson`'s
  *  `BBox = [number, number, number, number] | [number, …×6]`, so it is
  *  assignable **to and from** the native type (a plain `number[]` is not).
+ * 
+ *  Deserializes from a flat array of 4 or 6 numbers; any other length errors.
  */
 export type Bbox = 
 /**  2D bounding box: `[west, south, east, north]`. */

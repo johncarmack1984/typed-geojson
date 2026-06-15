@@ -9,6 +9,8 @@ documentation = "https://docs.rs/typed-geojson"
 readme = "README.md"
 keywords = ["geojson", "geospatial", "serde", "typed", "geo"]
 categories = ["science::geo", "encoding"]
+# The TS assignability harness and CI config aren't needed by crate consumers.
+exclude = ["/ts", "/.github"]
 
 [features]
 # Derive `specta::Type` for every public type, so a Rust function returning a
