@@ -2,7 +2,7 @@
 name = "typed-geojson"
 version = "0.1.0"
 edition = "2024"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "Strongly-typed GeoJSON — Feature<T> and FeatureCollection<T> with typed properties, layered over the georust geojson crate."
 repository = "https://github.com/johncarmack1984/typed-geojson"
 documentation = "https://docs.rs/typed-geojson"
