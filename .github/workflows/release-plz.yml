@@ -3,6 +3,7 @@ name: Release-plz
 on:
   push:
     branches: [main]
+  workflow_dispatch: # manual trigger (e.g. to test the bot-app token)
 
 # release-plz pushes the release-PR branch and version tags (contents) and opens
 # the release PR (pull-requests). Crate publishing uses CARGO_REGISTRY_TOKEN.
@@ -20,25 +21,23 @@ jobs:
       group: release-plz-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      # Act as the john-carmack-bot GitHub App so the release PR is authored by the
-      # bot (and CI runs on it). Skipped until RELEASE_PLZ_APP_ID is set, leaving the
-      # default GITHUB_TOKEN in use — so the workflow never breaks mid-setup.
+      # Mint a token for the john-carmack-bot GitHub App so the release PR is
+      # authored by the bot (and CI runs on it) rather than github-actions[bot].
       - uses: actions/create-github-app-token@v3
         id: app-token
-        if: ${{ vars.RELEASE_PLZ_APP_ID != '' }}
         with:
-          app-id: ${{ vars.RELEASE_PLZ_APP_ID }}
-          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: release-plz/action@v0.5
         with:
           command: release-pr
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   # Publishes any version in Cargo.toml not yet on crates.io, then tags it and
@@ -49,18 +48,17 @@ jobs:
     steps:
       - uses: actions/create-github-app-token@v3
         id: app-token
-        if: ${{ vars.RELEASE_PLZ_APP_ID != '' }}
         with:
-          app-id: ${{ vars.RELEASE_PLZ_APP_ID }}
-          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: release-plz/action@v0.5
         with:
           command: release
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
