@@ -28,7 +28,9 @@ jobs:
         with:
           command: release-pr
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Authors the release PR + GitHub release as john-carmack-bot (and lets
+          # CI run on the PR). Falls back to the default token until the secret exists.
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   # Publishes any version in Cargo.toml not yet on crates.io, then tags it and
@@ -45,5 +47,7 @@ jobs:
         with:
           command: release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Authors the release PR + GitHub release as john-carmack-bot (and lets
+          # CI run on the PR). Falls back to the default token until the secret exists.
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
