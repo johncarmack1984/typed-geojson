@@ -1,6 +1,0 @@
-# release-plz configuration — https://release-plz.dev/docs/config
-# The workflow that runs this lives in .github/workflows/release-plz.yml.
-
-[workspace]
-# Tag releases `vX.Y.Z` (matches the existing v0.1.0 / v0.1.1 tags).
-git_tag_name = "v{{ version }}"
