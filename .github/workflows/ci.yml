@@ -8,6 +8,11 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# Least privilege for GITHUB_TOKEN: every job only reads the repo. Publishing
+# uses CARGO_REGISTRY_TOKEN (an external secret), not GITHUB_TOKEN.
+permissions:
+  contents: read
+
 jobs:
   rust:
     name: Rust (test, clippy, fmt)
