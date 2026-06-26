@@ -6,7 +6,7 @@
 [![License: MIT OR Apache-2.0](https://img.shields.io/crates/l/typed-geojson.svg)](#license)
 
 Strongly-typed [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946) for Rust.
-`Feature<G, P>` / `FeatureCollection<G, P>` — generic over **G**eometry and
+`Feature<G, P>` / `FeatureCollection<G, P>`: generic over **G**eometry and
 **P**roperties, layered over the georust [`geojson`](https://crates.io/crates/geojson)
 crate. With the `specta` feature it exports to TypeScript that is **mutually
 assignable with [`@types/geojson`](https://www.npmjs.com/package/@types/geojson)**.
@@ -30,11 +30,11 @@ assert_eq!(feature.properties.name, "DFW");
 
 ## What you get
 
-- `Feature<G, P>` / `FeatureCollection<G, P>` — native parameter order; `G`
+- `Feature<G, P>` / `FeatureCollection<G, P>`: native parameter order; `G`
   defaults to the [`Geometry`] union, `P` to an untyped JSON object.
-- Typed geometry — `Point`, `LineString`, `Polygon`, `MultiPoint`,
+- Typed geometry (`Point`, `LineString`, `Polygon`, `MultiPoint`,
   `MultiLineString`, `MultiPolygon`, `GeometryCollection`, and the `Geometry`
-  union — each matching its native `@types/geojson` shape.
+  union), each matching its native `@types/geojson` shape.
 - serde that round-trips to/from spec GeoJSON: validates `"type"`, tolerates
   foreign members, keeps `id`/`bbox`, omits an absent `bbox`.
 - `TryFrom` bridges to/from the untyped `geojson` crate.
@@ -53,7 +53,7 @@ type PointFeat = Feature<Point, Props>;             // geometry: Point
 ## TypeScript (`specta` feature)
 
 `Feature<Point, Props>` exports to a TS `Feature<Point, Props>` assignable **to
-and from** `GeoJSON.Feature<GeoJSON.Point, Props>` — zero `tsc` errors, both ways.
+and from** `GeoJSON.Feature<GeoJSON.Point, Props>`: zero `tsc` errors, both ways.
 
 ```rust
 let types = typed_geojson::specta_types();
@@ -67,7 +67,7 @@ assignability harness, gated in CI by `tsc --noEmit`.
 
 ## Benchmarks
 
-`cargo bench` — a 1k-point FeatureCollection with typed properties, vs the
+`cargo bench`, a 1k-point FeatureCollection with typed properties, vs the
 untyped `geojson` baseline:
 
 | variant | deserialize | serialize |
