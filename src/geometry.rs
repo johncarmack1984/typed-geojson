@@ -6,7 +6,7 @@
 //! Each geometry is its own named type (so you can pin one, like
 //! `Feature<Point, P>`); [`Geometry`] is their union. The `"type"` member is a
 //! single-variant enum (e.g. [`PointType`]) so it exports as the **string
-//! literal** `"Point"`, not `string` — which is what makes the native types
+//! literal** `"Point"`, not `string`, which is what makes the native types
 //! assignable.
 
 use serde::{Deserialize, Serialize};
@@ -25,7 +25,7 @@ pub type Position = Vec<f64>;
 /// and rejects a `concat!`.)
 macro_rules! coord_geometry {
     ($name:ident, $tag:ident, $lit:literal, $coords:ty, $ts_coords:ty) => {
-        /// The `"type"` member of a single geometry kind — a string literal,
+        /// The `"type"` member of a single geometry kind: a string literal,
         /// which is what makes the type assignable to the native geometry.
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
         #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -125,7 +125,7 @@ pub enum GeometryCollectionType {
 }
 
 /// A GeoJSON GeometryCollection (RFC 7946 §3.1.8): a list of geometries.
-// `Serialize` is hand-written (below) to omit an absent `bbox` — see the note
+// `Serialize` is hand-written (below) to omit an absent `bbox`; see the note
 // on the coordinate geometries above.
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]

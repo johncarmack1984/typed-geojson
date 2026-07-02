@@ -1,8 +1,8 @@
 //! Strongly-typed [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946).
 //!
 //! The [`geojson`] crate models a Feature's `properties` as an untyped
-//! `Option<serde_json::Map<String, Value>>`. This crate adds generics —
-//! [`Feature<G, P>`] and [`FeatureCollection<G, P>`] — typed over both the
+//! `Option<serde_json::Map<String, Value>>`. This crate adds generics,
+//! [`Feature<G, P>`] and [`FeatureCollection<G, P>`], typed over both the
 //! `G`eometry and the `P`roperties, in the same parameter order as
 //! `@types/geojson`'s `Feature<G, P>` so the two interoperate.
 //!
@@ -12,7 +12,7 @@
 //! `GeoJsonProperties`); pick your own `P` for typed properties:
 //!
 //! Per RFC 7946 a Feature's geometry is mandatory but may be `null`; like
-//! native, that nullability lives in `G` — `Feature<Geometry>` is non-null,
+//! native, that nullability lives in `G`: `Feature<Geometry>` is non-null,
 //! `Feature<Option<Geometry>>` (→ TS `Geometry | null`) is the nullable form.
 //! [`geojson::Geometry`] interop is available through the [`Feature`] /
 //! [`Geometry`] `TryFrom` bridges.
@@ -74,7 +74,7 @@ pub use geometry::*;
 /// specta-typescript renders Rust `f64` as `number | null` (to model `NaN` /
 /// `Infinity`, which serde_json writes as `null`). GeoJSON coordinates and
 /// bboxes are finite reals, so for the TS bindings we override those numeric
-/// fields to this marker — which renders as a plain `number` — via
+/// fields to this marker (which renders as a plain `number`) via
 /// `#[specta(type = …)]`. serde and the Rust API keep the real `f64`.
 #[cfg(feature = "specta")]
 pub(crate) struct TsNumber;
@@ -105,7 +105,7 @@ pub type Properties = Option<serde_json::Map<String, serde_json::Value>>;
 pub enum Bbox {
     /// 2D bounding box: `[west, south, east, north]`.
     // specta `type =` can't parse an array type (`[T; N]`), but a tuple renders
-    // as the same TS tuple — and matches native `BBox`'s `[number, number, …]`.
+    // as the same TS tuple, and matches native `BBox`'s `[number, number, …]`.
     D2(
         #[cfg_attr(feature = "specta", specta(type = (TsNumber, TsNumber, TsNumber, TsNumber)))]
         [f64; 4],
