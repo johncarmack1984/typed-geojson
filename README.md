@@ -8,8 +8,8 @@
 Strongly-typed [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946) for Rust.
 `Feature<G, P>` / `FeatureCollection<G, P>`: generic over **G**eometry and
 **P**roperties, layered over the georust [`geojson`](https://crates.io/crates/geojson)
-crate. With the `specta` feature it exports to TypeScript that is **mutually
-assignable with [`@types/geojson`](https://www.npmjs.com/package/@types/geojson)**.
+crate. With the `specta` feature it exports to TypeScript that is mutually
+assignable with [`@types/geojson`](https://www.npmjs.com/package/@types/geojson).
 
 ```rust
 use serde::{Deserialize, Serialize};
@@ -52,8 +52,8 @@ type PointFeat = Feature<Point, Props>;             // geometry: Point
 
 ## TypeScript (`specta` feature)
 
-`Feature<Point, Props>` exports to a TS `Feature<Point, Props>` assignable **to
-and from** `GeoJSON.Feature<GeoJSON.Point, Props>`: zero `tsc` errors, both ways.
+`Feature<Point, Props>` exports to a TS `Feature<Point, Props>` assignable to
+and from `GeoJSON.Feature<GeoJSON.Point, Props>`: zero `tsc` errors, both ways.
 
 ```rust
 let types = typed_geojson::specta_types();
@@ -61,8 +61,8 @@ let ts = specta_typescript::Typescript::default()
     .export(&types, specta_serde::Format)?;
 ```
 
-Two details make it line up: `bbox` is a **tuple union** (`[n,n,n,n] | [n,…×6]`),
-not `number[]`; each geometry's `"type"` is a **string literal**. `ts/` holds the
+Two details make it line up: `bbox` is a tuple union (`[n,n,n,n] | [n,…×6]`),
+not `number[]`; each geometry's `"type"` is a string literal. `ts/` holds the
 assignability harness, gated in CI by `tsc --noEmit`.
 
 ## Benchmarks
@@ -76,7 +76,7 @@ untyped `geojson` baseline:
 | typed properties | ~341 µs | ~158 µs |
 | typed properties + our `Geometry` | ~396 µs | ~176 µs |
 
-Typed is **~30% faster to deserialize** (typed `properties` skip the untyped JSON
+Typed is ~30% faster to deserialize (typed `properties` skip the untyped JSON
 map); the untagged `Geometry` union adds ~16% on reads. Serialize is on par.
 
 ## License

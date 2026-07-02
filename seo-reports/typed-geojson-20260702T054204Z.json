@@ -1,0 +1,336 @@
+{
+  "surface": {
+    "id": "typed-geojson",
+    "url": "https://github.com/johncarmack1984/typed-geojson",
+    "kind": "site",
+    "gsc_property": null,
+    "github_repo": "johncarmack1984/typed-geojson",
+    "positioning": "typed-geojson is a Rust crate (crates.io): strongly-typed GeoJSON, Feature<G, P> / FeatureCollection<G, P> over the georust geojson crate, exporting TypeScript mutually assignable with @types/geojson via specta; no site of its own -- surfaces are crates.io, docs.rs, lib.rs, GitHub.",
+    "seed_keywords": [],
+    "surface_markers": [],
+    "namesake_markers": [],
+    "geo_probes": [],
+    "cite_domains": []
+  },
+  "results": [
+    {
+      "provider": "crawl",
+      "tier": 0,
+      "status": "ok",
+      "signals": [
+        {
+          "key": "final_url",
+          "value": "https://github.com/johncarmack1984/typed-geojson",
+          "note": ""
+        },
+        {
+          "key": "status",
+          "value": 200,
+          "note": ""
+        },
+        {
+          "key": "title",
+          "value": "GitHub - johncarmack1984/typed-geojson: Strongly-typed GeoJSON for Rust: Feature<G, P> / FeatureCollection<G, P>, mutually assignable with @types/geojson via specta \u00b7 GitHub",
+          "note": ""
+        },
+        {
+          "key": "title_len",
+          "value": 173,
+          "note": ""
+        },
+        {
+          "key": "meta_description",
+          "value": "Strongly-typed GeoJSON for Rust: Feature<G, P> / FeatureCollection<G, P>, mutually assignable with @types/geojson via specta - johncarmack1984/typed-geojson",
+          "note": ""
+        },
+        {
+          "key": "canonical",
+          "value": null,
+          "note": ""
+        },
+        {
+          "key": "html_lang",
+          "value": "en",
+          "note": ""
+        },
+        {
+          "key": "og_tags",
+          "value": 9,
+          "note": ""
+        },
+        {
+          "key": "twitter_tags",
+          "value": 5,
+          "note": ""
+        },
+        {
+          "key": "h1_raw",
+          "value": [
+            "Search code, repositories, users, issues, pull requests...",
+            "Provide feedback",
+            "Saved searches",
+            "johncarmack1984/typed-geojson",
+            "typed-geojson"
+          ],
+          "note": ""
+        },
+        {
+          "key": "raw_html_words",
+          "value": 1081,
+          "note": ""
+        },
+        {
+          "key": "jsonld_types_raw",
+          "value": [],
+          "note": ""
+        },
+        {
+          "key": "rendered",
+          "value": "skipped (install 'render' extra for the JS-gap)",
+          "note": ""
+        },
+        {
+          "key": "robots_txt",
+          "value": "ok",
+          "note": ""
+        },
+        {
+          "key": "sitemap_xml",
+          "value": "406",
+          "note": ""
+        }
+      ],
+      "findings": [
+        {
+          "severity": "low",
+          "code": "title.length",
+          "message": "Title is 173 chars (aim 15-65)."
+        },
+        {
+          "severity": "low",
+          "code": "canonical.missing",
+          "message": "No rel=canonical link."
+        },
+        {
+          "severity": "high",
+          "code": "schema.missing",
+          "message": "No JSON-LD structured data in server HTML (no Person/ProfilePage entity for Google or LLMs)."
+        },
+        {
+          "severity": "low",
+          "code": "robots.no_sitemap",
+          "message": "robots.txt does not reference a sitemap."
+        },
+        {
+          "severity": "medium",
+          "code": "sitemap.missing",
+          "message": "No /sitemap.xml (200)."
+        }
+      ],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    },
+    {
+      "provider": "psi",
+      "tier": 0,
+      "status": "ok",
+      "signals": [
+        {
+          "key": "performance_score",
+          "value": 56,
+          "note": ""
+        },
+        {
+          "key": "LCP",
+          "value": "10.0\u00a0s",
+          "note": ""
+        },
+        {
+          "key": "CLS",
+          "value": "0",
+          "note": ""
+        },
+        {
+          "key": "TBT",
+          "value": "100\u00a0ms",
+          "note": ""
+        },
+        {
+          "key": "SpeedIndex",
+          "value": "9.7\u00a0s",
+          "note": ""
+        },
+        {
+          "key": "INP_field_ms",
+          "value": 248,
+          "note": "real-user p75"
+        }
+      ],
+      "findings": [
+        {
+          "severity": "medium",
+          "code": "psi.performance",
+          "message": "Mobile performance score 56 (<90)."
+        }
+      ],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    },
+    {
+      "provider": "gsc",
+      "tier": 0,
+      "status": "skipped",
+      "signals": [],
+      "findings": [
+        {
+          "severity": "low",
+          "code": "gsc.no_property",
+          "message": "surface has no gsc_property set."
+        }
+      ],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    },
+    {
+      "provider": "github",
+      "tier": 0,
+      "status": "ok",
+      "signals": [
+        {
+          "key": "description",
+          "value": "Strongly-typed GeoJSON for Rust: Feature<G, P> / FeatureCollection<G, P>, mutually assignable with @types/geojson via specta",
+          "note": ""
+        },
+        {
+          "key": "topics",
+          "value": [
+            "geojson",
+            "geospatial",
+            "rust",
+            "serde",
+            "specta",
+            "type-safe",
+            "typescript"
+          ],
+          "note": ""
+        },
+        {
+          "key": "stars",
+          "value": 0,
+          "note": ""
+        },
+        {
+          "key": "homepage",
+          "value": "https://docs.rs/typed-geojson",
+          "note": ""
+        },
+        {
+          "key": "views_14d",
+          "value": 0,
+          "note": ""
+        },
+        {
+          "key": "uniques_14d",
+          "value": 0,
+          "note": ""
+        }
+      ],
+      "findings": [],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    },
+    {
+      "provider": "bing",
+      "tier": 0,
+      "status": "ok",
+      "signals": [
+        {
+          "key": "bing",
+          "value": "HTTP 400",
+          "note": ""
+        }
+      ],
+      "findings": [
+        {
+          "severity": "low",
+          "code": "bing.error",
+          "message": "Bing API returned 400 (is the site verified for this key?)."
+        }
+      ],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    },
+    {
+      "provider": "trends",
+      "tier": 0,
+      "status": "skipped",
+      "signals": [],
+      "findings": [
+        {
+          "severity": "low",
+          "code": "trends.no_seeds",
+          "message": "surface has no seed_keywords."
+        }
+      ],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    },
+    {
+      "provider": "dataforseo",
+      "tier": 1,
+      "status": "skipped",
+      "signals": [],
+      "findings": [],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    },
+    {
+      "provider": "serper",
+      "tier": 1,
+      "status": "skipped",
+      "signals": [],
+      "findings": [
+        {
+          "severity": "low",
+          "code": "serper.no_seeds",
+          "message": "surface has no seed_keywords; skipping."
+        }
+      ],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    },
+    {
+      "provider": "geo_probe",
+      "tier": 2,
+      "status": "skipped",
+      "signals": [],
+      "findings": [
+        {
+          "severity": "low",
+          "code": "geo.no_config",
+          "message": "set surface_markers + geo_probes on the surface (surfaces.toml) to run GEO probes; skipping."
+        }
+      ],
+      "error": null,
+      "stub_adds": null,
+      "stub_env": [],
+      "stub_contract": null
+    }
+  ]
+}
