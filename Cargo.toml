@@ -27,7 +27,7 @@ specta = { version = "=2.0.0-rc.25", optional = true, features = ["derive", "ser
 serde = { version = "1", features = ["derive"] }
 specta-typescript = "0.0.12"
 specta-serde = "0.0.12"
-criterion = "0.5"
+criterion = "0.8"
 
 [[bench]]
 name = "geojson"
