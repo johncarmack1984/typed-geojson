@@ -71,7 +71,7 @@ export type LineString = {
 };
 
 /**
- *  The `"type"` member of a single geometry kind — a string literal,
+ *  The `"type"` member of a single geometry kind: a string literal,
  *  which is what makes the type assignable to the native geometry.
  */
 export type LineStringType = "LineString";
@@ -87,7 +87,7 @@ export type MultiLineString = {
 };
 
 /**
- *  The `"type"` member of a single geometry kind — a string literal,
+ *  The `"type"` member of a single geometry kind: a string literal,
  *  which is what makes the type assignable to the native geometry.
  */
 export type MultiLineStringType = "MultiLineString";
@@ -103,7 +103,7 @@ export type MultiPoint = {
 };
 
 /**
- *  The `"type"` member of a single geometry kind — a string literal,
+ *  The `"type"` member of a single geometry kind: a string literal,
  *  which is what makes the type assignable to the native geometry.
  */
 export type MultiPointType = "MultiPoint";
@@ -119,7 +119,7 @@ export type MultiPolygon = {
 };
 
 /**
- *  The `"type"` member of a single geometry kind — a string literal,
+ *  The `"type"` member of a single geometry kind: a string literal,
  *  which is what makes the type assignable to the native geometry.
  */
 export type MultiPolygonType = "MultiPolygon";
@@ -135,7 +135,7 @@ export type Point = {
 };
 
 /**
- *  The `"type"` member of a single geometry kind — a string literal,
+ *  The `"type"` member of a single geometry kind: a string literal,
  *  which is what makes the type assignable to the native geometry.
  */
 export type PointType = "Point";
@@ -151,7 +151,7 @@ export type Polygon = {
 };
 
 /**
- *  The `"type"` member of a single geometry kind — a string literal,
+ *  The `"type"` member of a single geometry kind: a string literal,
  *  which is what makes the type assignable to the native geometry.
  */
 export type PolygonType = "Polygon";
