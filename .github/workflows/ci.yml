@@ -9,7 +9,7 @@ env:
   CARGO_TERM_COLOR: always
 
 # Least privilege for GITHUB_TOKEN: every job only reads the repo. Publishing
-# uses CARGO_REGISTRY_TOKEN (an external secret), not GITHUB_TOKEN.
+# uses crates.io Trusted Publishing (OIDC, in release-plz.yml), not GITHUB_TOKEN.
 permissions:
   contents: read
 
@@ -24,12 +24,12 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check
-      - run: cargo test
-      - run: cargo test --features specta
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo clippy --all-targets --features specta -- -D warnings
+      - run: cargo test --locked
+      - run: cargo test --locked --features specta
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo clippy --locked --all-targets --features specta -- -D warnings
       # Ensure the benchmarks keep compiling (don't run timings in CI).
-      - run: cargo bench --no-run
+      - run: cargo bench --no-run --locked
 
   typescript:
     name: TS assignability vs @types/geojson
@@ -44,7 +44,7 @@ jobs:
           cache: npm
           cache-dependency-path: ts/package-lock.json
       # Regenerate the bindings and fail if they drifted from what's committed.
-      - run: cargo run --example export_bindings --features specta
+      - run: cargo run --locked --example export_bindings --features specta
       - run: git diff --exit-code ts/bindings.ts
       # The north star: the generated bindings must be mutually assignable with
       # @types/geojson (both directions), gated by `tsc --noEmit`.
