@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/johncarmack1984/typed-geojson/compare/v0.1.2...v0.1.3) - 2026-07-07
+
+### Other
+
+- install rustfmt and clippy components with the channel ([#9](https://github.com/johncarmack1984/typed-geojson/pull/9))
+- Update dependencies ([#6](https://github.com/johncarmack1984/typed-geojson/pull/6))
+
 ## [0.1.2](https://github.com/johncarmack1984/typed-geojson/compare/v0.1.1...v0.1.2) - 2026-07-04
 
 ### Other
