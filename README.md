@@ -65,6 +65,20 @@ Two details make it line up: `bbox` is a tuple union (`[n,n,n,n] | [n,…×6]`),
 not `number[]`; each geometry's `"type"` is a string literal. `ts/` holds the
 assignability harness, gated in CI by `tsc --noEmit`.
 
+### Compatibility
+
+CI gates the assignability promise across the versions consumers actually
+resolve: `@types/geojson` from `7946.0.8` (the `Feature`/`FeatureCollection`
+generics era) through latest, on the pinned TypeScript compiler, plus a
+non-blocking canary against `typescript@next`.
+
+Known caveat: under `exactOptionalPropertyTypes`, `@types/geojson` declares
+optionals as `bbox?: BBox | undefined` while the generated bindings say
+`bbox?: Bbox`, so tsc rejects assignment from the native types into the
+bindings types. That rendering choice lives in the TypeScript exporter, not
+in this crate, so the harness runs without the flag until the exporter grows
+an option for it.
+
 ## Benchmarks
 
 `cargo bench`, a 1k-point FeatureCollection with typed properties, vs the
