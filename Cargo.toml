@@ -21,12 +21,12 @@ specta = ["dep:specta"]
 geojson = "1.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-specta = { version = "=2.0.0-rc.26", optional = true, features = ["derive", "serde_json"] }
+specta = { version = "=2.0.0-rc.25", optional = true, features = ["derive", "serde_json"] }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
-specta-typescript = "0.0.13"
-specta-serde = "0.0.13"
+specta-typescript = "0.0.12"
+specta-serde = "0.0.12"
 criterion = "0.8"
 
 [[bench]]
@@ -39,11 +39,3 @@ required-features = ["specta"]
 
 [package.metadata.docs.rs]
 all-features = true
-
-# rc.26 / 0.0.13 are merged on specta main but unpublished (crates.io still serves
-# rc.25 / 0.0.12); resolve them from the pinned upstream rev until the release lands,
-# then drop this section.
-[patch.crates-io]
-specta = { git = "https://github.com/specta-rs/specta", rev = "ef21f0544e153b944ff5d1b3afd20472afcf760c" }
-specta-serde = { git = "https://github.com/specta-rs/specta", rev = "ef21f0544e153b944ff5d1b3afd20472afcf760c" }
-specta-typescript = { git = "https://github.com/specta-rs/specta", rev = "ef21f0544e153b944ff5d1b3afd20472afcf760c" }
