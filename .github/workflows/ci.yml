@@ -58,3 +58,38 @@ jobs:
         run: npm ci
       - working-directory: ts
         run: npx tsc --noEmit
+
+  # The promise across the versions consumers actually resolve: the committed
+  # bindings must stay mutually assignable with @types/geojson from the
+  # declared floor (7946.0.8, the Feature/FeatureCollection generics era)
+  # through latest, plus a non-blocking canary on the next TypeScript
+  # compiler. Bindings drift vs the Rust source is gated by the `typescript`
+  # job above; this one exercises the committed file, so it needs no cargo.
+  assignability-matrix:
+    name: assignability @types/geojson@${{ matrix.types }} / tsc ${{ matrix.tsc }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: ${{ matrix.canary }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { types: '7946.0.8', tsc: 'locked', canary: false }
+          - { types: 'latest', tsc: 'locked', canary: false }
+          - { types: 'latest', tsc: 'next', canary: true }
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 'lts/*'
+          cache: npm
+          cache-dependency-path: ts/package-lock.json
+      - working-directory: ts
+        run: npm ci
+      - working-directory: ts
+        run: npm install --no-save "@types/geojson@${{ matrix.types }}"
+      - if: matrix.tsc != 'locked'
+        working-directory: ts
+        run: npm install --no-save "typescript@${{ matrix.tsc }}"
+      - working-directory: ts
+        run: npx tsc --noEmit
