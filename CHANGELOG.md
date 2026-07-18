@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/johncarmack1984/typed-geojson/compare/v0.1.3...v0.1.4) - 2026-07-18
+
+### Other
+
+- gate assignability from @types/geojson 7946.0.8 through latest, plus a tsc canary ([#15](https://github.com/johncarmack1984/typed-geojson/pull/15))
+
 ## [0.1.3](https://github.com/johncarmack1984/typed-geojson/compare/v0.1.2...v0.1.3) - 2026-07-07
 
 ### Other
