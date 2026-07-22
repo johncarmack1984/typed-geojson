@@ -874,6 +874,7 @@ name = "typed-geojson"
 version = "0.1.4"
 dependencies = [
  "criterion",
+ "geo-types",
  "geojson",
  "serde",
  "serde_json",

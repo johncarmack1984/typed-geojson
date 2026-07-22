@@ -57,6 +57,22 @@
 //! let untyped: geojson::Feature = f.try_into().unwrap();
 //! assert!(untyped.geometry.is_some());
 //! ```
+//!
+//! Unknown top-level members (RFC 7946 §6.1 *foreign members* — an extension's
+//! `"title"`, a vendor field) are preserved rather than dropped; see
+//! [`ForeignMembers`]. With the `geo-types` feature, the geometry types convert
+//! to and from [`geo_types`] so a typed geometry flows into georust's `geo`
+//! algorithms:
+//!
+//! ```
+//! # #[cfg(feature = "geo-types")]
+//! # {
+//! use typed_geojson::Point;
+//!
+//! let p: geo_types::Point<f64> = Point::new(vec![-96.8, 32.8]).try_into().unwrap();
+//! assert_eq!(p, geo_types::Point::new(-96.8, 32.8));
+//! # }
+//! ```
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -67,6 +83,11 @@ use serde::{Deserialize, Serialize};
 
 mod geometry;
 pub use geometry::*;
+
+// `From`/`TryFrom` between our geometry types and `geo_types` (impls only, so a
+// private module suffices — trait impls apply crate-wide regardless).
+#[cfg(feature = "geo-types")]
+mod geo_types_bridge;
 
 /// `specta` export-only marker: a JSON number that maps to the native TS
 /// `number`.
@@ -90,6 +111,36 @@ impl specta::Type for TsNumber {
 /// (RFC 7946 §3.2). Mirrors `@types/geojson`'s
 /// `GeoJsonProperties = { [name: string]: any } | null`.
 pub type Properties = Option<serde_json::Map<String, serde_json::Value>>;
+
+/// A GeoJSON object's *foreign members* (RFC 7946 §6.1): members that the
+/// specification does not define — an extension's `"title"`, a vendor field, a
+/// legacy `"crs"`, and so on. The standard [`geojson`] crate documents that its
+/// typed path **drops these on the floor**; this crate keeps them, so a
+/// parse → serialize round-trip is byte-faithful and nothing a producer wrote
+/// is silently lost.
+///
+/// They are stored as a JSON object and serialized **flattened** at the top
+/// level of the enclosing object — never nested — exactly as they arrive on the
+/// wire. An empty map serializes to nothing (no key is emitted), so a Feature
+/// with no foreign members is byte-identical to one built without this field.
+///
+/// Foreign members are runtime fidelity only: they are deliberately **left out
+/// of the `specta` / TypeScript export**. `@types/geojson` does not model them
+/// either — they are excess properties there — so keeping them out of the
+/// static contract is exactly what preserves the assignability guarantee.
+///
+/// ```
+/// use typed_geojson::{Feature, Geometry};
+///
+/// // A Feature carrying an extension member alongside the spec fields.
+/// let raw = r#"{"type":"Feature","geometry":null,"properties":null,"title":"Sensor 7"}"#;
+/// let f: Feature<Option<Geometry>> = serde_json::from_str(raw).unwrap();
+/// assert_eq!(f.foreign_members["title"], serde_json::json!("Sensor 7"));
+///
+/// // …and it survives serialization untouched (here, byte-for-byte).
+/// assert_eq!(serde_json::to_string(&f).unwrap(), raw);
+/// ```
+pub type ForeignMembers = serde_json::Map<String, serde_json::Value>;
 
 /// A GeoJSON bounding box (RFC 7946 §5): a flat array of `2*n` numbers, either
 /// 4 (2D, `[west, south, east, north]`) or 6 (3D, with min/max elevation).
@@ -174,10 +225,14 @@ pub struct Feature<G = Geometry, P = Properties> {
     pub properties: P,
     pub id: Option<Id>,
     pub bbox: Option<Bbox>,
+    /// Foreign members (RFC 7946 §6.1) preserved verbatim through serde and the
+    /// [`geojson`] bridge; empty when there are none. See [`ForeignMembers`].
+    pub foreign_members: ForeignMembers,
 }
 
 impl<G, P> Feature<G, P> {
-    /// A `Feature` with just a geometry and properties (no `id`/`bbox`).
+    /// A `Feature` with just a geometry and properties (no `id`/`bbox`, no
+    /// foreign members).
     ///
     /// Nullability lives in `G`: use `Feature::<Geometry, _>::new(geom, …)` for
     /// a required geometry, or `Feature::<Option<Geometry>, _>::new(None, …)`
@@ -188,6 +243,7 @@ impl<G, P> Feature<G, P> {
             properties,
             id: None,
             bbox: None,
+            foreign_members: ForeignMembers::new(),
         }
     }
 }
@@ -201,6 +257,7 @@ impl<G: Serialize, P: Serialize> Serialize for Feature<G, P> {
         if self.bbox.is_some() {
             len += 1;
         }
+        len += self.foreign_members.len();
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("type", "Feature")?;
         // RFC 7946: `geometry` is mandatory but may be null.
@@ -212,20 +269,49 @@ impl<G: Serialize, P: Serialize> Serialize for Feature<G, P> {
         if let Some(bbox) = &self.bbox {
             map.serialize_entry("bbox", bbox)?;
         }
+        // RFC 7946 §6.1: foreign members sit at the top level of the object.
+        for (name, value) in &self.foreign_members {
+            map.serialize_entry(name, value)?;
+        }
         map.end()
     }
 }
 
-#[derive(Deserialize)]
-#[serde(field_identifier, rename_all = "lowercase")]
-enum FeatureField {
+// A Feature's member names. Known members map to their variant; anything else
+// is an RFC 7946 §6.1 foreign member and keeps its name (owned only for those
+// unknown keys — known keys never allocate).
+enum FeatureKey {
     Type,
     Geometry,
     Properties,
     Id,
     Bbox,
-    #[serde(other)]
-    Other,
+    Foreign(String),
+}
+
+impl<'de> Deserialize<'de> for FeatureKey {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct KeyVisitor;
+        impl<'de> Visitor<'de> for KeyVisitor {
+            type Value = FeatureKey;
+
+            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.write_str("a GeoJSON Feature member name")
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<FeatureKey, E> {
+                Ok(match v {
+                    "type" => FeatureKey::Type,
+                    "geometry" => FeatureKey::Geometry,
+                    "properties" => FeatureKey::Properties,
+                    "id" => FeatureKey::Id,
+                    "bbox" => FeatureKey::Bbox,
+                    _ => FeatureKey::Foreign(v.to_owned()),
+                })
+            }
+        }
+        deserializer.deserialize_str(KeyVisitor)
+    }
 }
 
 impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature<G, P> {
@@ -245,10 +331,11 @@ impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature
                 let mut properties: Option<P> = None;
                 let mut id: Option<Id> = None;
                 let mut bbox: Option<Bbox> = None;
+                let mut foreign_members = ForeignMembers::new();
 
                 while let Some(key) = map.next_key()? {
                     match key {
-                        FeatureField::Type => {
+                        FeatureKey::Type => {
                             let ty: String = map.next_value()?;
                             if ty != "Feature" {
                                 return Err(de::Error::custom(format!(
@@ -257,13 +344,13 @@ impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature
                             }
                             had_type = true;
                         }
-                        FeatureField::Geometry => geometry = Some(map.next_value()?),
-                        FeatureField::Properties => properties = Some(map.next_value()?),
-                        FeatureField::Id => id = map.next_value()?,
-                        FeatureField::Bbox => bbox = map.next_value()?,
-                        // Ignore unknown keys (RFC 7946 foreign members).
-                        FeatureField::Other => {
-                            let _: de::IgnoredAny = map.next_value()?;
+                        FeatureKey::Geometry => geometry = Some(map.next_value()?),
+                        FeatureKey::Properties => properties = Some(map.next_value()?),
+                        FeatureKey::Id => id = map.next_value()?,
+                        FeatureKey::Bbox => bbox = map.next_value()?,
+                        // Preserve unknown keys as RFC 7946 §6.1 foreign members.
+                        FeatureKey::Foreign(name) => {
+                            foreign_members.insert(name, map.next_value()?);
                         }
                     }
                 }
@@ -278,6 +365,7 @@ impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature
                     properties: properties.ok_or_else(|| de::Error::missing_field("properties"))?,
                     id,
                     bbox,
+                    foreign_members,
                 })
             }
         }
@@ -307,6 +395,9 @@ impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature
 pub struct FeatureCollection<G = Geometry, P = Properties> {
     pub features: Vec<Feature<G, P>>,
     pub bbox: Option<Bbox>,
+    /// Foreign members (RFC 7946 §6.1) preserved verbatim; empty when there are
+    /// none. See [`ForeignMembers`].
+    pub foreign_members: ForeignMembers,
 }
 
 impl<G, P> FromIterator<Feature<G, P>> for FeatureCollection<G, P> {
@@ -314,6 +405,7 @@ impl<G, P> FromIterator<Feature<G, P>> for FeatureCollection<G, P> {
         Self {
             features: iter.into_iter().collect(),
             bbox: None,
+            foreign_members: ForeignMembers::new(),
         }
     }
 }
@@ -324,24 +416,50 @@ impl<G: Serialize, P: Serialize> Serialize for FeatureCollection<G, P> {
         if self.bbox.is_some() {
             len += 1;
         }
+        len += self.foreign_members.len();
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("type", "FeatureCollection")?;
         map.serialize_entry("features", &self.features)?;
         if let Some(bbox) = &self.bbox {
             map.serialize_entry("bbox", bbox)?;
         }
+        // RFC 7946 §6.1: foreign members sit at the top level of the object.
+        for (name, value) in &self.foreign_members {
+            map.serialize_entry(name, value)?;
+        }
         map.end()
     }
 }
 
-#[derive(Deserialize)]
-#[serde(field_identifier, rename_all = "lowercase")]
-enum CollectionField {
+// A FeatureCollection's member names; see [`FeatureKey`].
+enum CollectionKey {
     Type,
     Features,
     Bbox,
-    #[serde(other)]
-    Other,
+    Foreign(String),
+}
+
+impl<'de> Deserialize<'de> for CollectionKey {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct KeyVisitor;
+        impl<'de> Visitor<'de> for KeyVisitor {
+            type Value = CollectionKey;
+
+            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.write_str("a GeoJSON FeatureCollection member name")
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<CollectionKey, E> {
+                Ok(match v {
+                    "type" => CollectionKey::Type,
+                    "features" => CollectionKey::Features,
+                    "bbox" => CollectionKey::Bbox,
+                    _ => CollectionKey::Foreign(v.to_owned()),
+                })
+            }
+        }
+        deserializer.deserialize_str(KeyVisitor)
+    }
 }
 
 impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for FeatureCollection<G, P> {
@@ -362,10 +480,11 @@ impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature
                 let mut had_type = false;
                 let mut features: Option<Vec<Feature<G, P>>> = None;
                 let mut bbox: Option<Bbox> = None;
+                let mut foreign_members = ForeignMembers::new();
 
                 while let Some(key) = map.next_key()? {
                     match key {
-                        CollectionField::Type => {
+                        CollectionKey::Type => {
                             let ty: String = map.next_value()?;
                             if ty != "FeatureCollection" {
                                 return Err(de::Error::custom(format!(
@@ -374,10 +493,11 @@ impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature
                             }
                             had_type = true;
                         }
-                        CollectionField::Features => features = Some(map.next_value()?),
-                        CollectionField::Bbox => bbox = map.next_value()?,
-                        CollectionField::Other => {
-                            let _: de::IgnoredAny = map.next_value()?;
+                        CollectionKey::Features => features = Some(map.next_value()?),
+                        CollectionKey::Bbox => bbox = map.next_value()?,
+                        // Preserve unknown keys as RFC 7946 §6.1 foreign members.
+                        CollectionKey::Foreign(name) => {
+                            foreign_members.insert(name, map.next_value()?);
                         }
                     }
                 }
@@ -388,6 +508,7 @@ impl<'de, G: Deserialize<'de>, P: Deserialize<'de>> Deserialize<'de> for Feature
                 Ok(FeatureCollection {
                     features: features.ok_or_else(|| de::Error::missing_field("features"))?,
                     bbox,
+                    foreign_members,
                 })
             }
         }
@@ -437,7 +558,9 @@ impl<P: Serialize> TryFrom<Feature<Option<Geometry>, P>> for geojson::Feature {
             geometry: f.geometry.map(geojson::Geometry::try_from).transpose()?,
             id: f.id.map(Into::into),
             properties,
-            foreign_members: None,
+            // Carry foreign members across (RFC 7946 §6.1); `geojson` normalizes
+            // an empty map to `None`, so match that rather than emit `Some({})`.
+            foreign_members: (!f.foreign_members.is_empty()).then_some(f.foreign_members),
         })
     }
 }
@@ -455,6 +578,8 @@ impl<P: serde::de::DeserializeOwned> TryFrom<geojson::Feature> for Feature<Optio
             properties: serde_json::from_value(value)?,
             id: f.id.map(Into::into),
             bbox: f.bbox.map(bbox_from_vec).transpose()?,
+            // Preserve any foreign members the untyped Feature carried.
+            foreign_members: f.foreign_members.unwrap_or_default(),
         })
     }
 }
@@ -492,6 +617,10 @@ pub fn specta_types() -> specta::Types {
 // field for `#[derive(specta::Type)]` to see. These shadows mirror the exact
 // wire shape — including the literal `"type"` tag — and exist only to drive
 // TypeScript generation. They are not part of the public API.
+//
+// The runtime `foreign_members` map (RFC 7946 §6.1) is deliberately absent
+// here: `@types/geojson` does not type foreign members either, so surfacing
+// one would break the assignability promise. They stay runtime-only fidelity.
 #[cfg(feature = "specta")]
 #[doc(hidden)]
 #[allow(dead_code)]

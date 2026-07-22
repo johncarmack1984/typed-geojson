@@ -48,8 +48,12 @@ jobs:
       - run: cargo fmt --check
       - run: cargo test --locked
       - run: cargo test --locked --features specta
+      - run: cargo test --locked --features geo-types
+      - run: cargo test --locked --all-features
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo clippy --locked --all-targets --features specta -- -D warnings
+      - run: cargo clippy --locked --all-targets --features geo-types -- -D warnings
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
       # Ensure the benchmarks keep compiling (don't run timings in CI).
       - run: cargo bench --no-run --locked
 

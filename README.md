@@ -35,9 +35,12 @@ assert_eq!(feature.properties.name, "DFW");
 - Typed geometry (`Point`, `LineString`, `Polygon`, `MultiPoint`,
   `MultiLineString`, `MultiPolygon`, `GeometryCollection`, and the `Geometry`
   union), each matching its native `@types/geojson` shape.
-- serde that round-trips to/from spec GeoJSON: validates `"type"`, tolerates
-  foreign members, keeps `id`/`bbox`, omits an absent `bbox`.
+- serde that round-trips to/from spec GeoJSON: validates `"type"`, **preserves
+  foreign members** (RFC 7946 §6.1), keeps `id`/`bbox`, omits an absent `bbox`.
 - `TryFrom` bridges to/from the untyped `geojson` crate.
+- Optional `geo-types` feature: `From`/`TryFrom` between the geometry types and
+  [`geo-types`](https://crates.io/crates/geo-types), so a typed geometry flows
+  into the georust [`geo`](https://crates.io/crates/geo) algorithms layer.
 
 ## Nullability lives in `G`
 
@@ -48,6 +51,46 @@ is a choice of `G`:
 type Located   = Feature<Geometry, Props>;          // geometry: Geometry  (non-null)
 type Unlocated = Feature<Option<Geometry>, Props>;  // geometry: Geometry | null
 type PointFeat = Feature<Point, Props>;             // geometry: Point
+```
+
+## Foreign members are preserved, not dropped
+
+RFC 7946 §6.1 lets a GeoJSON object carry members the spec doesn't define — an
+extension's `"title"`, a producer's vendor field, a legacy `"crs"`. The standard
+`geojson` crate's typed path discards these; this crate keeps them on
+`Feature` and `FeatureCollection`, so a parse → serialize round-trip is
+byte-faithful and they also survive the `geojson` bridge.
+
+```rust
+use typed_geojson::{Feature, Geometry};
+
+let raw = r#"{"type":"Feature","geometry":null,"properties":null,"title":"Sensor 7"}"#;
+let f: Feature<Option<Geometry>> = serde_json::from_str(raw).unwrap();
+assert_eq!(f.foreign_members["title"], serde_json::json!("Sensor 7"));
+assert_eq!(serde_json::to_string(&f).unwrap(), raw); // round-trips byte-for-byte
+```
+
+Foreign members are runtime fidelity only — they are deliberately left out of
+the `specta`/TypeScript export, because `@types/geojson` doesn't type them
+either, and keeping them out of the static contract is what preserves the
+assignability guarantee.
+
+## `geo-types` (feature)
+
+Enable the `geo-types` feature to convert between the geometry types and
+`geo-types`, matching upstream `geojson`'s semantics: `geo_types` → ours is
+infallible (`From`; a 3D `geo_types` never carries elevation, so positions are
+2D), ours → `geo_types` is fallible (`TryFrom`; a position needs at least `x`
+and `y`).
+
+```rust
+# #[cfg(feature = "geo-types")]
+# {
+use typed_geojson::Point;
+
+let p: geo_types::Point<f64> = Point::new(vec![-96.8, 32.8]).try_into().unwrap();
+assert_eq!(p, geo_types::Point::new(-96.8, 32.8));
+# }
 ```
 
 ## TypeScript (`specta` feature)
