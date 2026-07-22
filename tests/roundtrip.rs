@@ -153,6 +153,102 @@ fn bbox_survives_the_untyped_bridge() {
     assert_eq!(back, typed);
 }
 
+// --- foreign members (RFC 7946 §6.1) ------------------------------------------
+
+#[test]
+fn feature_foreign_members_are_preserved() {
+    let raw = r#"{ "type": "Feature", "geometry": null,
+                   "properties": { "event": "x", "severity": 0 },
+                   "title": "Sensor 7", "cellId": 42 }"#;
+    let f: Feature<Option<Geometry>, Alert> = serde_json::from_str(raw).unwrap();
+
+    // The two unknown members are captured, not dropped.
+    assert_eq!(f.foreign_members["title"], serde_json::json!("Sensor 7"));
+    assert_eq!(f.foreign_members["cellId"], serde_json::json!(42));
+    // …and the spec members still parse normally.
+    assert_eq!(f.properties.event, "x");
+
+    // No data is lost on the way back out (order-independent value compare).
+    let reparsed: serde_json::Value =
+        serde_json::from_str(&serde_json::to_string(&f).unwrap()).unwrap();
+    assert_eq!(
+        reparsed,
+        serde_json::from_str::<serde_json::Value>(raw).unwrap()
+    );
+}
+
+#[test]
+fn feature_round_trip_is_byte_faithful() {
+    // Written in this crate's canonical member order (type, geometry,
+    // properties, id, bbox, then foreign members sorted by key — serde_json's
+    // Map is a BTreeMap), so parse → serialize reproduces the bytes exactly.
+    let raw = concat!(
+        r#"{"type":"Feature","#,
+        r#""geometry":{"type":"Point","coordinates":[-96.8,32.8]},"#,
+        r#""properties":{"event":"x","severity":0},"#,
+        r#""id":7,"#,
+        r#""bbox":[-97.0,32.0,-96.0,33.0],"#,
+        r#""cellId":42,"title":"Extended"}"#,
+    );
+    let f: Feature<Geometry, Alert> = serde_json::from_str(raw).unwrap();
+    assert_eq!(serde_json::to_string(&f).unwrap(), raw);
+}
+
+#[test]
+fn feature_collection_foreign_members_are_preserved() {
+    // A collection-level foreign member *and* per-feature ones, both nested.
+    let raw = concat!(
+        r#"{"type":"FeatureCollection","#,
+        r#""features":[{"type":"Feature","geometry":null,"properties":null,"partOf":"grid"}],"#,
+        r#""cellSize":0.5,"name":"sensor grid"}"#,
+    );
+    let fc: FeatureCollection<Option<Geometry>, serde_json::Value> =
+        serde_json::from_str(raw).unwrap();
+
+    assert_eq!(fc.foreign_members["name"], serde_json::json!("sensor grid"));
+    assert_eq!(fc.foreign_members["cellSize"], serde_json::json!(0.5));
+    assert_eq!(
+        fc.features[0].foreign_members["partOf"],
+        serde_json::json!("grid")
+    );
+
+    // Byte-faithful (fixture already in canonical order).
+    assert_eq!(serde_json::to_string(&fc).unwrap(), raw);
+}
+
+#[test]
+fn foreign_members_survive_the_untyped_bridge() {
+    let typed: Feature<Option<Geometry>, Alert> = serde_json::from_str(
+        r#"{ "type": "Feature", "geometry": null,
+             "properties": { "event": "x", "severity": 0 },
+             "title": "kept" }"#,
+    )
+    .unwrap();
+
+    // typed -> geojson::Feature carries the foreign member (flattened top-level).
+    let untyped: geojson::Feature = typed.clone().try_into().unwrap();
+    assert_eq!(
+        untyped.foreign_members.as_ref().unwrap()["title"],
+        serde_json::json!("kept")
+    );
+
+    // …and back again, unchanged.
+    let back: Feature<Option<Geometry>, Alert> = untyped.try_into().unwrap();
+    assert_eq!(back, typed);
+    assert_eq!(back.foreign_members["title"], serde_json::json!("kept"));
+}
+
+#[test]
+fn absent_foreign_members_add_no_bytes() {
+    // A Feature with no foreign members serializes exactly as before this field
+    // existed — the empty map emits nothing.
+    let f: Feature<Point, &str> = Feature::new(Point::new(vec![-96.8, 32.8]), "DFW");
+    assert_eq!(
+        serde_json::to_string(&f).unwrap(),
+        r#"{"type":"Feature","geometry":{"type":"Point","coordinates":[-96.8,32.8]},"properties":"DFW"}"#,
+    );
+}
+
 // --- our own geometry types ---------------------------------------------------
 
 #[test]

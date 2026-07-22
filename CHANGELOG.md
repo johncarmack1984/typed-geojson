@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/johncarmack1984/typed-geojson/compare/v0.1.4...v0.2.0) - 2026-07-22
+
+### Added
+
+- Preserve RFC 7946 §6.1 foreign members on `Feature` / `FeatureCollection`: unknown top-level members now round-trip byte-faithfully through serde and across the `geojson` bridge instead of being dropped, via a new public `foreign_members` field. They are intentionally excluded from the `specta`/TypeScript export, so the `@types/geojson` assignability contract is unchanged. ([#18](https://github.com/johncarmack1984/typed-geojson/pull/18))
+- `geo-types` feature: `From` / `TryFrom` between the geometry types and `geo_types`, matching the underlying `geojson` crate's conversion semantics, so a typed geometry flows into the georust `geo` algorithms layer. ([#18](https://github.com/johncarmack1984/typed-geojson/pull/18))
+
+### Changed
+
+- **Breaking:** `Feature` and `FeatureCollection` have a new public `foreign_members` field, so struct-literal construction must set it — use `Feature::new` for the empty default. ([#18](https://github.com/johncarmack1984/typed-geojson/pull/18))
+
 ## [0.1.4](https://github.com/johncarmack1984/typed-geojson/compare/v0.1.3...v0.1.4) - 2026-07-18
 
 ### Other

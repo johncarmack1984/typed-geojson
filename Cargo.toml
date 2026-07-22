@@ -1,6 +1,6 @@
 [package]
 name = "typed-geojson"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "Strongly-typed GeoJSON: Feature<G, P> and FeatureCollection<G, P> with typed geometry and properties, layered over the georust geojson crate."
@@ -16,12 +16,18 @@ exclude = ["/ts", "/.github"]
 # Derive `specta::Type` for every public type, so a Rust function returning a
 # typed-geojson value exports to `@types/geojson`-assignable TypeScript.
 specta = ["dep:specta"]
+# `From`/`TryFrom` between our geometry types and `geo-types`, so a typed
+# geometry flows into the georust algorithms layer (`geo`). Feature-gated, like
+# the same conversions on the underlying `geojson` crate.
+geo-types = ["dep:geo-types"]
 
 [dependencies]
 geojson = "1.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 specta = { version = "=2.0.0-rc.25", optional = true, features = ["derive", "serde_json"] }
+# The version georust `geojson` 1.0 itself resolves; kept in step deliberately.
+geo-types = { version = "0.7", optional = true }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
