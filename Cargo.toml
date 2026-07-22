@@ -7,7 +7,7 @@ description = "Strongly-typed GeoJSON: Feature<G, P> and FeatureCollection<G, P>
 repository = "https://github.com/johncarmack1984/typed-geojson"
 documentation = "https://docs.rs/typed-geojson"
 readme = "README.md"
-keywords = ["geojson", "geospatial", "serde", "typescript", "geo"]
+keywords = ["geojson", "geospatial", "types", "typescript", "geo"]
 categories = ["science::geo", "encoding"]
 # The TS assignability harness and CI config aren't needed by crate consumers.
 exclude = ["/ts", "/.github"]

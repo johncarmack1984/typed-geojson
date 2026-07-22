@@ -1,4 +1,4 @@
-//! Strongly-typed [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946).
+//! Strongly-typed [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946) for Rust.
 //!
 //! The [`geojson`] crate models a Feature's `properties` as an untyped
 //! `Option<serde_json::Map<String, Value>>`. This crate adds generics,
