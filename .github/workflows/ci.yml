@@ -39,12 +39,19 @@ jobs:
     name: Rust (test, clippy, fmt)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      CARGO_INCREMENTAL: "0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable branch
         with:
           components: clippy, rustfmt
+      - uses: mozilla-actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696 # v0.0.10
       - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          cache-targets: "false"
       - run: cargo fmt --check
       - run: cargo test --locked
       - run: cargo test --locked --features specta
@@ -56,15 +63,25 @@ jobs:
       - run: cargo clippy --locked --all-targets --all-features -- -D warnings
       # Ensure the benchmarks keep compiling (don't run timings in CI).
       - run: cargo bench --no-run --locked
+      - name: sccache stats
+        if: ${{ always() }}
+        run: sccache --show-stats
 
   typescript:
     name: TS assignability vs @types/geojson
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      CARGO_INCREMENTAL: "0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable branch
+      - uses: mozilla-actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696 # v0.0.10
       - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          cache-targets: "false"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 'lts/*'
@@ -79,6 +96,9 @@ jobs:
         run: npm ci
       - working-directory: ts
         run: npx tsc --noEmit
+      - name: sccache stats
+        if: ${{ always() }}
+        run: sccache --show-stats
 
   # The promise across the versions consumers actually resolve: the committed
   # bindings must stay mutually assignable with @types/geojson from the
