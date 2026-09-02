@@ -5,6 +5,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "Strongly-typed GeoJSON: Feature<G, P> and FeatureCollection<G, P> with typed geometry and properties, layered over the georust geojson crate."
 repository = "https://github.com/johncarmack1984/typed-geojson"
+homepage = "https://johncarmack.com"
 documentation = "https://docs.rs/typed-geojson"
 readme = "README.md"
 keywords = ["geojson", "geospatial", "types", "typescript", "geo"]
