@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0](https://github.com/johncarmack1984/typed-geojson/compare/v0.3.0...v0.4.0) - 2026-11-05
 
-### Added
+### Changed
 
-- [**breaking**] build the specta feature on specta 2.0.0-rc.28 ([#35](https://github.com/johncarmack1984/typed-geojson/pull/35))
+- The `specta` feature builds on specta `2.0.0-rc.28`, still pinned exact. A crate that enables it needs specta rc.28 too, which is what makes this release breaking. The exported TypeScript is unchanged. ([#35](https://github.com/johncarmack1984/typed-geojson/pull/35))
 
 ## [0.3.0](https://github.com/johncarmack1984/typed-geojson/compare/v0.2.2...v0.3.0) - 2026-11-03
 
