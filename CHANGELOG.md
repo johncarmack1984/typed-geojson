@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/johncarmack1984/typed-geojson/compare/v0.3.0...v0.4.0) - 2026-11-05
+
+### Added
+
+- [**breaking**] build the specta feature on specta 2.0.0-rc.28 ([#35](https://github.com/johncarmack1984/typed-geojson/pull/35))
+
 ## [0.3.0](https://github.com/johncarmack1984/typed-geojson/compare/v0.2.2...v0.3.0) - 2026-11-03
 
 ### Changed
